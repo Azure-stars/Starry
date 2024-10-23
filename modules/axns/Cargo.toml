@@ -20,6 +20,7 @@ thread-local = []
 log = "0.4"
 lazyinit = "0.2"
 crate_interface = "0.1"
+spin = "0.9"
 
 [dev-dependencies]
 axns = { workspace = true, features = ["thread-local"] }

@@ -20,7 +20,6 @@
 #![cfg_attr(not(test), no_std)]
 
 extern crate alloc;
-
 use alloc::sync::Arc;
 use core::{alloc::Layout, fmt, ops::Deref};
 
@@ -221,12 +220,19 @@ pub unsafe fn current_namespace_base() -> *mut u8 {
 /// ```
 #[macro_export]
 macro_rules! def_resource {
-    ( $( $(#[$attr:meta])* $vis:vis static $name:ident: $ty:ty = $default:expr; )+ ) => {
+    ( $( $(#[$attr:meta])* $vis:vis static $name:ident: $ty:ty = $default:expr; $($init_stmt: block)?  )+ ) => {
         $(
             $(#[$attr])*
             $vis struct $name { __value: () }
 
             impl $name {
+                fn init_once(&self) {
+                    static INIT: spin::Once = spin::Once::new();
+                    INIT.call_once(|| {
+                        $( $init_stmt )?
+                    });
+                }
+
                 unsafe fn deref_from_base(&self, ns_base: *mut u8) -> &$ty {
                     extern {
                         fn __start_axns_resource();
@@ -242,11 +248,13 @@ macro_rules! def_resource {
 
                 /// Dereference the resource from the given namespace.
                 pub fn deref_from(&self, ns: &$crate::AxNamespace) -> &$ty {
+                    self.init_once();
                     unsafe { self.deref_from_base(ns.base()) }
                 }
 
                 /// Dereference the resource from the global namespace.
                 pub fn deref_global(&self) -> &$ty {
+                    self.init_once();
                     self.deref_from(&$crate::AxNamespace::global())
                 }
 
@@ -257,6 +265,17 @@ macro_rules! def_resource {
                 /// thread-local namespace of the current thread. Otherwise, it
                 /// dereferences from the global namespace.
                 pub fn deref_auto(&self) -> &$ty {
+                    self.init_once();
+                    unsafe { self.deref_from_base($crate::current_namespace_base()) }
+                }
+
+                /// Dereference the resource from the global namespace, without
+                /// checking if it is initialized.
+                ///
+                /// # Safety
+                ///
+                /// The caller must ensure the resource has been initialized.
+                pub unsafe fn deref_auto_force(&self) -> &$ty {
                     unsafe { self.deref_from_base($crate::current_namespace_base()) }
                 }
             }
