@@ -272,10 +272,9 @@ macro_rules! def_resource {
                 /// Dereference the resource from the global namespace, without
                 /// checking if it is initialized.
                 ///
-                /// # Safety
-                ///
+                /// # Notes
                 /// The caller must ensure the resource has been initialized.
-                pub unsafe fn deref_auto_force(&self) -> &$ty {
+                pub fn deref_auto_force(&self) -> &$ty {
                     unsafe { self.deref_from_base($crate::current_namespace_base()) }
                 }
             }

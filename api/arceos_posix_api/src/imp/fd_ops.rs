@@ -29,11 +29,7 @@ def_resource! {
         fd_table.add_at(0, Arc::new(stdin()) as _).unwrap(); // stdin
         fd_table.add_at(1, Arc::new(stdout()) as _).unwrap(); // stdout
         fd_table.add_at(2, Arc::new(stdout()) as _).unwrap(); // stderr
-        axlog::info!("fd_table initialized");
-        unsafe{
-            FD_TABLE.deref_auto_force().init_new(RwLock::new(fd_table));
-        }
-        axlog::info!("fd_table initialized");
+        FD_TABLE.deref_auto_force().init_new(RwLock::new(fd_table));
     }
 }
 
